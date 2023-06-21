@@ -1,4 +1,7 @@
-function find() { // Egzersiz A
+const db = require("../../data/db-config.js");
+
+function find() {
+  // Egzersiz A
   /*
     1A- Aşağıdaki SQL sorgusunu SQLite Studio'da "data/schemes.db3" ile karşılaştırarak inceleyin.
     LEFT joini Inner joine çevirirsek ne olur?
@@ -15,9 +18,21 @@ function find() { // Egzersiz A
     2A- Sorguyu kavradığınızda devam edin ve onu Knex'te oluşturun.
     Bu işlevden elde edilen veri kümesini döndürün.
   */
+  return db("schemes as sc")
+    .leftJoin("steps as st", "sc.scheme_id", "st.scheme_id")
+    .select("sc.*")
+    .count("st.step_id as number_of_steps");
 }
 
-function findById(scheme_id) { // Egzersiz B
+function findById(scheme_id) {
+  // Egzersiz B
+  return db("schemes as sc")
+    .leftJoin("steps as st", "sc.scheme_id", "st.scheme_id")
+    .select("sc.*")
+    .where("sc.scheme_id", scheme_id)
+    .count("st.step_id as number_of_steps")
+    .first();
+
   /*
     1B- Aşağıdaki SQL sorgusunu SQLite Studio'da "data/schemes.db3" ile karşılaştırarak inceleyin:
 
@@ -29,6 +44,7 @@ function findById(scheme_id) { // Egzersiz B
           ON sc.scheme_id = st.scheme_id
       WHERE sc.scheme_id = 1
       ORDER BY st.step_number ASC;
+
 
     2B- Sorguyu kavradığınızda devam edin ve onu Knex'te oluşturun
     parametrik yapma: `1` hazır değeri yerine `scheme_id` kullanmalısınız.
@@ -85,7 +101,14 @@ function findById(scheme_id) { // Egzersiz B
   */
 }
 
-function findSteps(scheme_id) { // Egzersiz C
+function findSteps(scheme_id) {
+  // Egzersiz C
+  return db("steps as st")
+    .leftJoin("schemes as sc", "sc.scheme_id", "st.scheme_id")
+    .select("st.*", "sc.scheme_name")
+    .where("sc.scheme_id", scheme_id)
+    .orderBy("st.step_number");
+
   /*
     1C- Knex'te aşağıdaki verileri döndüren bir sorgu oluşturun.
     Adımlar, adım_numarası'na göre sıralanmalıdır ve dizi
@@ -108,13 +131,30 @@ function findSteps(scheme_id) { // Egzersiz C
   */
 }
 
-function add(scheme) { // Egzersiz D
+function add(scheme) {
+  // Egzersiz D
+  return db("schemes")
+    .insert(scheme)
+    .then(([scheme_id]) => {
+      return findById(scheme_id);
+    });
+
   /*
     1D- Bu işlev yeni bir şema oluşturur ve _yeni oluşturulan şemaya çözümlenir.
   */
 }
 
-function addStep(scheme_id, step) { // EXERCISE E
+function addStep(scheme_id, step) {
+  // EXERCISE E
+  return db("steps")
+    .insert({
+      ...step,
+      scheme_id,
+    })
+    .then(() => {
+      return findSteps(scheme_id);
+    });
+
   /*
     1E- Bu işlev, verilen 'scheme_id' ile şemaya bir adım ekler.
     ve verilen "scheme_id"ye ait _tüm adımları_ çözer,
@@ -128,4 +168,4 @@ module.exports = {
   findSteps,
   add,
   addStep,
-}
+};
